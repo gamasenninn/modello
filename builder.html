@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modello - Form Builder</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; height: 100vh; display: flex; flex-direction: column; }
+#toolbar { padding: 10px 16px; background: #2c3e50; color: #ecf0f1; display: flex; align-items: center; gap: 12px; }
+#toolbar h1 { font-size: 16px; }
+#toolbar select, #toolbar button { padding: 6px 12px; border-radius: 4px; border: 1px solid #555; font-size: 13px; }
+#toolbar button { background: #3498db; color: #fff; border-color: #3498db; cursor: pointer; }
+#toolbar button:hover { background: #2980b9; }
+#toolbar .btn-back { background: #555; border-color: #555; }
+#workspace { flex: 1; display: flex; overflow: hidden; }
+
+/* Palette */
+#palette { width: 200px; background: #ecf0f1; border-right: 1px solid #ddd; padding: 12px; overflow-y: auto; }
+#palette h3 { font-size: 13px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
+.palette-item {
+  padding: 8px 12px; background: #fff; border: 1px solid #ddd; border-radius: 4px;
+  margin-bottom: 6px; cursor: grab; font-size: 13px; user-select: none;
+}
+.palette-item:hover { border-color: #3498db; background: #eaf6ff; }
+.palette-item:active { cursor: grabbing; }
+
+/* Canvas */
+#canvas { flex: 1; padding: 20px; overflow-y: auto; background: #fafafa; }
+#canvas-inner { max-width: 700px; margin: 0 auto; min-height: 300px; border: 2px dashed #ddd; border-radius: 8px; padding: 16px; background: #fff; }
+#canvas-inner.drag-over { border-color: #3498db; background: #eaf6ff; }
+.canvas-field {
+  padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 8px;
+  cursor: grab; display: flex; align-items: center; gap: 10px; background: #fff; transition: box-shadow 0.2s;
+}
+.canvas-field:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.canvas-field.selected { border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.3); }
+.canvas-field.drag-over-item { border-top: 3px solid #3498db; }
+.canvas-field .handle { color: #ccc; cursor: grab; font-size: 16px; }
+.canvas-field .field-info { flex: 1; }
+.canvas-field .field-label { font-size: 13px; font-weight: 600; }
+.canvas-field .field-type { font-size: 11px; color: #888; }
+.canvas-field .remove-btn { color: #e74c3c; cursor: pointer; font-size: 14px; padding: 4px; }
+.canvas-field .remove-btn:hover { background: #fde8e8; border-radius: 4px; }
+.empty-canvas { text-align: center; color: #bbb; padding: 40px; font-size: 14px; }
+
+/* Properties */
+#properties { width: 280px; background: #fff; border-left: 1px solid #ddd; padding: 16px; overflow-y: auto; }
+#properties h3 { font-size: 13px; color: #666; margin-bottom: 12px; text-transform: uppercase; }
+.prop-group { margin-bottom: 12px; }
+.prop-group label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 3px; }
+.prop-group input, .prop-group select, .prop-group textarea { width: 100%; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+.prop-group textarea { min-height: 60px; resize: vertical; }
+.prop-group input[type="checkbox"] { width: auto; }
+#no-selection { color: #bbb; font-size: 13px; text-align: center; padding: 20px; }
+.prop-tabs { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 12px; }
+.prop-tab { padding: 6px 12px; cursor: pointer; font-size: 12px; color: #888; border-bottom: 2px solid transparent; }
+.prop-tab.active { color: #3498db; border-bottom-color: #3498db; }
+.relation-item { padding: 8px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 8px; background: #fafafa; }
+.relation-item .remove-rel { color: #e74c3c; cursor: pointer; float: right; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <button class="btn-back" onclick="window.location.href='/'">Back</button>
+  <h1>Form Builder</h1>
+  <select id="screen-select"><option value="">-- Select Screen --</option></select>
+  <button onclick="loadScreen()">Load</button>
+  <button onclick="saveScreen()">Save</button>
+  <button onclick="previewForm()">Preview</button>
+</div>
+<div id="workspace">
+  <div id="palette">
+    <h3>Fields</h3>
+    <div class="palette-item" draggable="true" data-type="text">Text</div>
+    <div class="palette-item" draggable="true" data-type="number">Number</div>
+    <div class="palette-item" draggable="true" data-type="email">Email</div>
+    <div class="palette-item" draggable="true" data-type="date">Date</div>
+    <div class="palette-item" draggable="true" data-type="select">Select</div>
+    <div class="palette-item" draggable="true" data-type="textarea">Textarea</div>
+    <div class="palette-item" draggable="true" data-type="checkbox">Checkbox</div>
+  </div>
+  <div id="canvas">
+    <div id="canvas-inner">
+      <div class="empty-canvas">Drag fields here to build your form</div>
+    </div>
+  </div>
+  <div id="properties">
+    <div class="prop-tabs">
+      <div class="prop-tab active" onclick="switchPropTab('fields')">Fields</div>
+      <div class="prop-tab" onclick="switchPropTab('relations')">Relations</div>
+    </div>
+    <div id="prop-fields">
+      <div id="no-selection">Select a field to edit properties</div>
+      <div id="prop-editor" style="display:none"></div>
+    </div>
+    <div id="prop-relations" style="display:none">
+      <div id="relations-list"></div>
+      <button class="btn btn-sm" onclick="addRelation()" style="margin-top:8px">+ Add Relation</button>
+    </div>
+  </div>
+</div>
+<script>
+var fields = [];
+var selectedIndex = -1;
+var dragSourceIndex = -1;
+
+function api(method, url, body) {
+  var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(url, opts).then(function(r) { if (r.status === 401) window.location.href='/login.html'; return r.json(); });
+}
+
+// Load screens into dropdown
+api('GET', '/api/screens').then(function(screens) {
+  var sel = document.getElementById('screen-select');
+  screens.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name + ' (' + s.table_name + ')';
+    sel.appendChild(opt);
+  });
+});
+
+// Palette D&D
+document.querySelectorAll('.palette-item').forEach(function(el) {
+  el.addEventListener('dragstart', function(e) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'palette', type: el.dataset.type }));
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+});
+
+// Canvas D&D
+var canvasInner = document.getElementById('canvas-inner');
+
+canvasInner.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  canvasInner.classList.add('drag-over');
+});
+canvasInner.addEventListener('dragleave', function(e) {
+  canvasInner.classList.remove('drag-over');
+});
+canvasInner.addEventListener('drop', function(e) {
+  e.preventDefault();
+  canvasInner.classList.remove('drag-over');
+  try {
+    var data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    if (data.source === 'palette') {
+      var newField = { field: 'field_' + (fields.length + 1), label: data.type.charAt(0).toUpperCase() + data.type.slice(1) + ' Field', type: data.type, required: false };
+      if (data.type === 'select') newField.options = ['Option 1', 'Option 2'];
+
+      // Find drop position
+      var dropY = e.clientY;
+      var insertIndex = fields.length;
+      var fieldEls = canvasInner.querySelectorAll('.canvas-field');
+      for (var i = 0; i < fieldEls.length; i++) {
+        var rect = fieldEls[i].getBoundingClientRect();
+        if (dropY < rect.top + rect.height / 2) { insertIndex = i; break; }
+      }
+      fields.splice(insertIndex, 0, newField);
+      selectedIndex = insertIndex;
+      renderCanvas();
+      renderProperties();
+    } else if (data.source === 'canvas') {
+      // Reorder
+      var fromIdx = data.index;
+      var toIdx = fields.length - 1;
+      var dropY = e.clientY;
+      var fieldEls = canvasInner.querySelectorAll('.canvas-field');
+      for (var i = 0; i < fieldEls.length; i++) {
+        var rect = fieldEls[i].getBoundingClientRect();
+        if (dropY < rect.top + rect.height / 2) { toIdx = i; break; }
+      }
+      if (fromIdx !== toIdx) {
+        var item = fields.splice(fromIdx, 1)[0];
+        if (toIdx > fromIdx) toIdx--;
+        fields.splice(toIdx, 0, item);
+        selectedIndex = toIdx;
+      }
+      renderCanvas();
+      renderProperties();
+    }
+  } catch(ex) {}
+});
+
+function renderCanvas() {
+  if (fields.length === 0) {
+    canvasInner.innerHTML = '<div class="empty-canvas">Drag fields here to build your form</div>';
+    return;
+  }
+  var html = '';
+  fields.forEach(function(f, i) {
+    var sel = i === selectedIndex ? ' selected' : '';
+    html += '<div class="canvas-field' + sel + '" draggable="true" data-index="' + i + '" onclick="selectField(' + i + ')">'
+      + '<span class="handle">&#9776;</span>'
+      + '<div class="field-info"><div class="field-label">' + esc(f.label) + (f.required ? ' *' : '') + '</div>'
+      + '<div class="field-type">' + esc(f.field) + ' : ' + f.type + '</div></div>'
+      + '<span class="remove-btn" onclick="event.stopPropagation();removeField(' + i + ')">&#10005;</span></div>';
+  });
+  canvasInner.innerHTML = html;
+
+  // Canvas field D&D for reorder
+  canvasInner.querySelectorAll('.canvas-field').forEach(function(el) {
+    el.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'canvas', index: parseInt(el.dataset.index) }));
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  });
+}
+
+function selectField(i) {
+  selectedIndex = i;
+  renderCanvas();
+  renderProperties();
+}
+
+function removeField(i) {
+  fields.splice(i, 1);
+  if (selectedIndex >= fields.length) selectedIndex = fields.length - 1;
+  renderCanvas();
+  renderProperties();
+}
+
+function renderProperties() {
+  var editor = document.getElementById('prop-editor');
+  var noSel = document.getElementById('no-selection');
+  if (selectedIndex < 0 || selectedIndex >= fields.length) {
+    editor.style.display = 'none';
+    noSel.style.display = 'block';
+    return;
+  }
+  noSel.style.display = 'none';
+  editor.style.display = 'block';
+  var f = fields[selectedIndex];
+  var html = '';
+  html += '<div class="prop-group"><label>Field Name</label><input type="text" value="' + esc(f.field) + '" oninput="updateProp(\'field\',this.value)"></div>';
+  html += '<div class="prop-group"><label>Label</label><input type="text" value="' + esc(f.label) + '" oninput="updateProp(\'label\',this.value)"></div>';
+  html += '<div class="prop-group"><label>Type</label><select onchange="updateProp(\'type\',this.value)">';
+  ['text','number','email','date','select','textarea','checkbox'].forEach(function(t) {
+    html += '<option' + (f.type === t ? ' selected' : '') + '>' + t + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="prop-group"><label><input type="checkbox"' + (f.required ? ' checked' : '') + ' onchange="updateProp(\'required\',this.checked)"> Required</label></div>';
+  if (f.type === 'select') {
+    html += '<div class="prop-group"><label>Options (one per line)</label><textarea oninput="updateProp(\'options\',this.value.split(\'\\n\'))">' + (f.options || []).join('\n') + '</textarea></div>';
+  }
+  editor.innerHTML = html;
+}
+
+function updateProp(key, value) {
+  if (selectedIndex >= 0 && selectedIndex < fields.length) {
+    fields[selectedIndex][key] = value;
+    renderCanvas();
+    renderProperties();
+  }
+}
+
+function loadScreen() {
+  var id = document.getElementById('screen-select').value;
+  if (!id) return;
+  api('GET', '/api/screens/' + id).then(function(screen) {
+    fields = (screen.definition.layout || []).map(function(f) {
+      return { field: f.field, label: f.label, type: f.type || 'text', required: !!f.required, options: f.options };
+    });
+    relations = (screen.definition.relations || []).map(function(r) {
+      return { table: r.table, foreignKey: r.foreignKey, title: r.title || '' };
+    });
+    selectedIndex = -1;
+    renderCanvas();
+    renderProperties();
+    renderRelations();
+  });
+}
+
+function saveScreen() {
+  var id = document.getElementById('screen-select').value;
+  if (!id) { alert('Select a screen first'); return; }
+  api('GET', '/api/screens/' + id).then(function(screen) {
+    var tableName = screen.table_name;
+    // テーブルのスキーマを取得して、新しいフィールドがあればALTER TABLE
+    return api('GET', '/api/tables/' + tableName + '/schema').then(function(schema) {
+      var existingCols = schema.columns.map(function(c) { return c.name; });
+      var addColumnPromises = [];
+      fields.forEach(function(f) {
+        if (existingCols.indexOf(f.field) < 0) {
+          // 新しいカラム → ALTER TABLE ADD COLUMN
+          var sqlType = 'TEXT';
+          if (f.type === 'number') sqlType = 'REAL';
+          else if (f.type === 'checkbox') sqlType = 'INTEGER';
+          else if (f.type === 'date') sqlType = 'TEXT';
+          addColumnPromises.push(
+            api('POST', '/api/tables/' + tableName + '/columns', { name: f.field, type: sqlType })
+          );
+        }
+      });
+      return Promise.all(addColumnPromises).then(function() { return screen; });
+    });
+  }).then(function(screen) {
+    var def = screen.definition;
+    def.layout = fields.map(function(f) {
+      var item = { field: f.field, label: f.label, type: f.type };
+      if (f.required) item.required = true;
+      if (f.options && f.type === 'select') item.options = f.options;
+      return item;
+    });
+    def.relations = relations.filter(function(r) { return r.table && r.foreignKey; });
+    return api('PUT', '/api/screens/' + id, { definition: def });
+  }).then(function(r) {
+    if (r.ok) alert('Saved!');
+    else alert('Error: ' + (r.error || 'Unknown'));
+  });
+}
+
+function previewForm() {
+  var html = '<div style="max-width:600px;margin:20px auto;background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1)">';
+  html += '<h3 style="margin-bottom:16px">Preview</h3>';
+  fields.forEach(function(f) {
+    html += '<div style="margin-bottom:14px"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px">' + esc(f.label) + (f.required ? ' *' : '') + '</label>';
+    if (f.type === 'checkbox') html += '<input type="checkbox">';
+    else if (f.type === 'textarea') html += '<textarea style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px"></textarea>';
+    else if (f.type === 'select') {
+      html += '<select style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px">';
+      (f.options||[]).forEach(function(o) { html += '<option>' + esc(o) + '</option>'; });
+      html += '</select>';
+    }
+    else html += '<input type="' + f.type + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px">';
+    html += '</div>';
+  });
+  html += '<button onclick="this.parentElement.parentElement.remove()" style="padding:8px 16px;background:#3498db;color:#fff;border:none;border-radius:4px;cursor:pointer">Close Preview</button>';
+  html += '</div>';
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100;overflow-y:auto';
+  overlay.innerHTML = html;
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// === Relations ===
+var relations = [];
+var allTables = [];
+
+// Load tables for relation dropdown
+api('GET', '/api/tables').then(function(tables) { allTables = tables; });
+
+function switchPropTab(tab) {
+  document.querySelectorAll('.prop-tab').forEach(function(el,i) {
+    el.className = 'prop-tab' + (['fields','relations'][i] === tab ? ' active' : '');
+  });
+  document.getElementById('prop-fields').style.display = tab === 'fields' ? 'block' : 'none';
+  document.getElementById('prop-relations').style.display = tab === 'relations' ? 'block' : 'none';
+  if (tab === 'relations') renderRelations();
+}
+
+function renderRelations() {
+  var html = '';
+  if (relations.length === 0) {
+    html = '<div style="color:#bbb;font-size:13px;text-align:center;padding:12px">No relations defined</div>';
+  }
+  relations.forEach(function(r, i) {
+    html += '<div class="relation-item">';
+    html += '<span class="remove-rel" onclick="removeRelation(' + i + ')">x</span>';
+    html += '<div class="prop-group"><label>Child Table</label><select onchange="updateRelation(' + i + ',\'table\',this.value)">';
+    html += '<option value="">-- Select --</option>';
+    allTables.forEach(function(t) {
+      html += '<option' + (r.table === t.name ? ' selected' : '') + '>' + t.name + '</option>';
+    });
+    html += '</select></div>';
+    html += '<div class="prop-group"><label>Foreign Key Column</label><input type="text" value="' + esc(r.foreignKey || '') + '" onchange="updateRelation(' + i + ',\'foreignKey\',this.value)" placeholder="e.g. customer_id"></div>';
+    html += '<div class="prop-group"><label>Display Title</label><input type="text" value="' + esc(r.title || '') + '" onchange="updateRelation(' + i + ',\'title\',this.value)" placeholder="e.g. Orders"></div>';
+    html += '</div>';
+  });
+  document.getElementById('relations-list').innerHTML = html;
+}
+
+function addRelation() {
+  relations.push({ table: '', foreignKey: '', title: '' });
+  renderRelations();
+}
+
+function removeRelation(i) {
+  relations.splice(i, 1);
+  renderRelations();
+}
+
+function updateRelation(i, key, value) {
+  relations[i][key] = value;
+  // Auto-suggest foreignKey and title
+  if (key === 'table' && value) {
+    if (!relations[i].foreignKey) {
+      // Get current screen's table name and suggest FK
+      var sel = document.getElementById('screen-select');
+      var screenOpt = sel.options[sel.selectedIndex];
+      if (screenOpt && screenOpt.textContent) {
+        var parentTable = screenOpt.textContent.match(/\(([^)]+)\)/);
+        if (parentTable) {
+          relations[i].foreignKey = parentTable[1] + '_id';
+        }
+      }
+    }
+    if (!relations[i].title) {
+      relations[i].title = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    renderRelations();
+  }
+}
+
+// Auto-load screen from URL parameter
+var urlParams = new URLSearchParams(window.location.search);
+var autoScreen = urlParams.get('screen');
+if (autoScreen) {
+  setTimeout(function() {
+    document.getElementById('screen-select').value = autoScreen;
+    loadScreen();
+  }, 500);
+}
+</script>
+</body>
+</html>
