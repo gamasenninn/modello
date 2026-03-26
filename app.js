@@ -478,8 +478,8 @@
         }
 
         html += '<div class="form-actions">';
+        html += '<button class="btn" onclick="App.navBack()" title="Back" style="padding:5px 10px;font-size:16px">&#8592;</button>';
         html += '<button class="btn btn-primary" onclick="App.saveRecord(\'' + table + '\',' + (id || 'null') + ')">Save</button>';
-        html += '<button class="btn" onclick="App.navBack()">Back</button>';
         if (id) html += '<button class="btn btn-danger" onclick="App.deleteRecord(\'' + table + '\',' + id + ')">Delete</button>';
         html += '</div></div>';
 
