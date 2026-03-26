@@ -72,6 +72,7 @@
                 + '<span style="flex:1;cursor:pointer" onclick="event.stopPropagation();App.openScreen(\'' + s.id + '\')">' + esc(s.name) + '</span>';
               if (state.user && state.user.role === 'admin') {
                 html += '<span style="cursor:pointer;font-size:11px;color:#95a5a6;padding:2px 4px" onclick="event.stopPropagation();App.openBuilder(\'' + s.id + '\')" title="Edit">&#9998;</span>';
+                html += '<span style="cursor:pointer;font-size:11px;color:#95a5a6;padding:2px 4px" onclick="event.stopPropagation();App.deleteScreen(\'' + s.id + '\',\'' + esc(s.name).replace(/'/g, "\\'") + '\')" title="Delete">&#10005;</span>';
               }
               html += '</div>';
             });
@@ -295,6 +296,16 @@
   // === Inline Builder (modal) ===
   function openBuilder(screenId) {
     window.location.href = '/builder.html?screen=' + screenId;
+  }
+
+  // === Delete Screen ===
+  function deleteScreen(screenId, screenName) {
+    if (!confirm('Delete screen \'' + screenName + '\'? This cannot be undone.\n\n(Only the screen definition will be deleted. Table data is not affected.)')) return;
+    api('DELETE', '/api/screens/' + screenId).then(function(r) {
+      if (r.error) { alert('Error: ' + r.error); return; }
+      state._currentScreenId = null;
+      showHome();
+    });
   }
 
   // === Table List View ===
@@ -752,6 +763,7 @@
       }
     },
     openBuilder: openBuilder,
+    deleteScreen: deleteScreen,
     openScreen: openScreen,
   };
 

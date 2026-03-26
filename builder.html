@@ -68,6 +68,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button onclick="loadScreen()">Load</button>
   <button onclick="saveScreen()">Save</button>
   <button onclick="previewForm()">Preview</button>
+  <button onclick="deleteCurrentScreen()" style="background:#e74c3c;border-color:#e74c3c;margin-left:auto">&#128465; Delete</button>
 </div>
 <div id="workspace">
   <div id="palette">
@@ -337,6 +338,18 @@ function previewForm() {
 }
 
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function deleteCurrentScreen() {
+  var id = document.getElementById('screen-select').value;
+  if (!id) { alert('Select a screen first'); return; }
+  var sel = document.getElementById('screen-select');
+  var name = sel.options[sel.selectedIndex].textContent;
+  if (!confirm('Delete screen \'' + name + '\'? This cannot be undone.')) return;
+  api('DELETE', '/api/screens/' + id).then(function(r) {
+    if (r.ok) { alert('Deleted'); window.location.href = '/'; }
+    else { alert('Error: ' + (r.error || 'Unknown')); }
+  });
+}
 
 // === Relations ===
 var relations = [];
