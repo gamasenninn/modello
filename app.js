@@ -93,7 +93,7 @@
     state.currentTable = null;
     state.currentView = 'home';
     setTitle('Modello');
-    setActions(state.user && state.user.role === 'admin' ? '<button class="btn btn-primary" onclick="App.showWizard()">+ New App</button>' : '');
+    setActions(state.user && state.user.role === 'admin' ? '<button class="btn btn-primary" onclick="App.showWizard()">&#10133; New App</button>' : '');
 
     Promise.all([
       api('GET', '/api/tables'),
@@ -182,7 +182,7 @@
           + '<div><label>PK</label><input type="checkbox" class="col-pk" checked></div>'
           + '<div><label>Required</label><input type="checkbox" class="col-req"></div>'
           + '</div></div>';
-        html += '<button class="btn btn-sm" onclick="App.addColumnDef()" style="margin-bottom:16px">+ Add Column</button>';
+        html += '<button class="btn btn-sm" onclick="App.addColumnDef()" style="margin-bottom:16px">&#10133; Add Column</button>';
       }
       html += '<div class="form-actions"><button class="btn btn-primary" onclick="App.wizardNext()">Create App →</button>'
         + '<button class="btn" onclick="App.showWizard(1)">← Back</button></div></div>';
@@ -325,7 +325,7 @@
       var rows = result.data;
       var pag = result.pagination;
 
-      setActions('<button class="btn btn-primary" onclick="App.showForm(\'' + name + '\')">+ New</button>');
+      setActions('<button class="btn btn-primary" onclick="App.showForm(\'' + name + '\')">&#10133; New</button>');
 
       var html = '<div class="search-bar"><input type="text" id="search-input" placeholder="Search..." value="' + esc(search) + '" onkeydown="if(event.key===\'Enter\')App.doSearch(\'' + name + '\')" oninput="App._searchDebounce(\'' + name + '\')"></div>';
       html += '<table class="data-table"><thead><tr>';
@@ -356,8 +356,8 @@
       // Pagination
       html += '<div class="pagination">';
       html += '<span>Page ' + pag.page + ' / ' + pag.pages + ' (' + pag.total + ' records)</span>';
-      if (pag.page > 1) html += '<button class="btn btn-sm" onclick="App.openTable(\'' + name + '\',{page:' + (pag.page-1) + ',sort:\'' + sort + '\',order:\'' + order + '\',search:\'' + esc(search) + '\'})">Prev</button>';
-      if (pag.page < pag.pages) html += '<button class="btn btn-sm" onclick="App.openTable(\'' + name + '\',{page:' + (pag.page+1) + ',sort:\'' + sort + '\',order:\'' + order + '\',search:\'' + esc(search) + '\'})">Next</button>';
+      if (pag.page > 1) html += '<button class="btn btn-sm" onclick="App.openTable(\'' + name + '\',{page:' + (pag.page-1) + ',sort:\'' + sort + '\',order:\'' + order + '\',search:\'' + esc(search) + '\'})">&#9664; Prev</button>';
+      if (pag.page < pag.pages) html += '<button class="btn btn-sm" onclick="App.openTable(\'' + name + '\',{page:' + (pag.page+1) + ',sort:\'' + sort + '\',order:\'' + order + '\',search:\'' + esc(search) + '\'})">Next &#9654;</button>';
       html += '</div>';
 
       setContent(html);
@@ -479,8 +479,8 @@
 
         html += '<div class="form-actions">';
         html += '<button class="btn" onclick="App.navBack()" title="Back" style="padding:5px 10px;font-size:16px">&#8592;</button>';
-        html += '<button class="btn btn-primary" onclick="App.saveRecord(\'' + table + '\',' + (id || 'null') + ')">Save</button>';
-        if (id) html += '<button class="btn btn-danger" onclick="App.deleteRecord(\'' + table + '\',' + id + ')">Delete</button>';
+        html += '<button class="btn btn-primary" onclick="App.saveRecord(\'' + table + '\',' + (id || 'null') + ')" title="Save">&#10003; Save</button>';
+        if (id) html += '<button class="btn btn-danger" onclick="App.deleteRecord(\'' + table + '\',' + id + ')" title="Delete">&#128465; Delete</button>';
         html += '</div></div>';
 
         // JS Customization: onLoad + onChange
@@ -519,7 +519,7 @@
                   def.relations.forEach(function(rel, i) {
                     var childRows = results[i].data;
                     relHtml += '<div class="relation-panel"><h3>' + esc(rel.title || rel.table) + ' (' + childRows.length + ')'
-                      + ' <button class="btn btn-sm btn-primary" onclick="App.openChildForm(\'' + rel.table + '\',null,\'' + table + '\',' + id + ',{' + rel.foreignKey + ':' + id + '})">+ Add</button></h3>';
+                      + ' <button class="btn btn-sm btn-primary" onclick="App.openChildForm(\'' + rel.table + '\',null,\'' + table + '\',' + id + ',{' + rel.foreignKey + ':' + id + '})">&#10133; Add</button></h3>';
                     if (childRows.length > 0) {
                       var childCols = Object.keys(childRows[0]);
                       relHtml += '<table class="data-table"><thead><tr>';
@@ -602,7 +602,7 @@
       + '<div><label>PK</label><input type="checkbox" class="col-pk" checked></div>'
       + '<div><label>Required</label><input type="checkbox" class="col-req"></div>'
       + '</div></div>';
-    html += '<button class="btn btn-sm" onclick="App.addColumnDef()" style="margin-bottom:16px">+ Add Column</button>';
+    html += '<button class="btn btn-sm" onclick="App.addColumnDef()" style="margin-bottom:16px">&#10133; Add Column</button>';
     html += '<div class="form-actions"><button class="btn btn-primary" onclick="App.doCreateTable()">Create Table</button>'
       + '<button class="btn" onclick="App.showHome()">Cancel</button></div></div>';
     setContent(html);
